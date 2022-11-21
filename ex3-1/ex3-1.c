@@ -19,7 +19,7 @@ void TransformOnceAndPrint(char *title, unsigned char *src, unsigned char *key) 
     MixColumns(state, state);
 
     // Print
-    print16bytes(title, state);
+    printAsAESState(title, state);
 }
 
 int main() {

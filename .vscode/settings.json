@@ -3,6 +3,7 @@
     "*.jslib": "javascript",
     "utils.h": "c",
     "transformation.h": "c",
-    "string.h": "c"
+    "string.h": "c",
+    "stdio.h": "c"
   }
 }

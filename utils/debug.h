@@ -1,6 +1,7 @@
 #ifndef _DEBUG_H
 #define _DEBUG_H
 
-void print16bytes(char *title, unsigned char *src);
+void printAsHex(char *title, unsigned char *src);
+void printAsAESState(char *title, unsigned char *src);
 
 #endif
