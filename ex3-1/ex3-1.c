@@ -1,32 +1,37 @@
 #include <stdio.h>
 #include <string.h>
 #include "../utils/transformation.h"
+#include "../utils/constants.h"
+
+void TransformOnceAndPrint(char *title, unsigned char *src, unsigned char *key) {
+    unsigned char state[Nk*Nb];
+    unsigned char w[Nk*Nb*(Nr+1)];
+
+    // Init
+    memcpy(state, src, sizeof(state));
+    KeyExpansion(w, key);
+
+    // Transform
+    AddRoundKey(state, state, w);
+    SubBytes(state, state);
+    ShiftRows(state, state);
+    MixColumns(state, state);
+
+    // Print
+    printf("%s: 0x", title);
+    for(int i = 0; i < 16; i++){
+        printf("%02x", state[i]);
+    }
+    printf("\n");
+}
 
 int main() {
     unsigned char PT1[16] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     unsigned char PT2[16] = {0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    unsigned char Key[16] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
 
-    KeyExpansion(w, key);
-
-    AddRoundKey(PT1, PT1, w);
-
-    SubBytes(PT1, PT1);
-    ShiftRows(PT1, PT1);
-    MixColumns(PT1, PT1);
-    printf("PT1: 0x");
-    for(int i = 0; i < 16; i++){
-        printf("%02x", PT1[i]);
-    }
-    printf("\n");
-
-    SubBytes(PT2, PT2);
-    ShiftRows(PT2, PT2);
-    MixColumns(PT2, PT2);
-    printf("PT2: 0x");
-    for(int i = 0; i < 16; i++){
-        printf("%02x", PT2[i]);
-    }
-    printf("\n");
+    TransformOnceAndPrint("PT1", PT1, Key);
+    TransformOnceAndPrint("PT2", PT2, Key);
 
     return 0;
 }
