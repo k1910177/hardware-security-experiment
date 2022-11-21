@@ -2,6 +2,7 @@
 #include <string.h>
 #include "../utils/transformation.h"
 #include "../utils/constants.h"
+#include "../utils/debug.h"
 
 void TransformOnceAndPrint(char *title, unsigned char *src, unsigned char *key) {
     unsigned char state[Nk*Nb];
@@ -18,11 +19,7 @@ void TransformOnceAndPrint(char *title, unsigned char *src, unsigned char *key) 
     MixColumns(state, state);
 
     // Print
-    printf("%s: 0x", title);
-    for(int i = 0; i < 16; i++){
-        printf("%02x", state[i]);
-    }
-    printf("\n");
+    print16bytes(title, state);
 }
 
 int main() {
