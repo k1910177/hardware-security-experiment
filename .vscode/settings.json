@@ -4,6 +4,7 @@
     "utils.h": "c",
     "transformation.h": "c",
     "string.h": "c",
-    "stdio.h": "c"
+    "stdio.h": "c",
+    "constants.h": "c"
   }
 }
