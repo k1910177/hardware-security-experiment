@@ -1,7 +1,7 @@
 {
   "files.associations": {
     "*.h": "c",
-    "*c": "c",
+    "*.c": "c",
   },
   "files.exclude": {
     "**/*.o": true
