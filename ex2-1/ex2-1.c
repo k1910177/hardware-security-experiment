@@ -1,19 +1,15 @@
 #include <stdio.h>
 #include <string.h>
 #include "../utils/transformation.h"
+#include "../utils/constants.h"
 
 void Encrypt(unsigned char *dst, unsigned char *src, unsigned char *init_key) {
-    unsigned char key[16];
-    unsigned char w[176];
-    unsigned char state[16];
-
-    // この関数を実装してください．
-	const int Nb = 4;
-	const int Nk = 4;
-	const int Nr = 10;
+    unsigned char state[Nk*Nb];
+    unsigned char key[Nk*Nb];
+    unsigned char w[Nk*Nb*(Nr+1)];
 
     memcpy(key, init_key, sizeof(key));
-    memcpy(state, src, sizeof(key));
+    memcpy(state, src, sizeof(state));
     KeyExpansion(w, key);
 
     AddRoundKey(state, state, w);
@@ -29,7 +25,7 @@ void Encrypt(unsigned char *dst, unsigned char *src, unsigned char *init_key) {
     ShiftRows(state, state);
     AddRoundKey(state, state, w + Nr*Nb*Nk);
 
-    memcpy(dst, state, 16);
+    memcpy(dst, state, sizeof(state));
 }
 
 int main() {
