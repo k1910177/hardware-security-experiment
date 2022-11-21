@@ -1,10 +1,6 @@
 {
   "files.associations": {
-    "*.jslib": "javascript",
-    "utils.h": "c",
-    "transformation.h": "c",
-    "string.h": "c",
-    "stdio.h": "c",
-    "constants.h": "c"
+    "*.h": "c",
+    "*c": "c",
   }
 }
