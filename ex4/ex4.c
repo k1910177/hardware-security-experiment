@@ -7,6 +7,14 @@
 #include "../utils/parser.h"
 #include "../utils/transformation.h"
 
+/**
+ *  type0  |  type1  |  type2  |  type3 
+ * x 0 0 0 | 0 x 0 0 | 0 0 x 0 | 0 0 0 x
+ * 0 x 0 0 | 0 0 x 0 | 0 0 0 x | x 0 0 0
+ * 0 0 x 0 | 0 0 0 x | x 0 0 0 | 0 x 0 0
+ * 0 0 0 x | x 0 0 0 | 0 x 0 0 | 0 0 x 0 
+ */
+
 typedef struct arg_struct {
     unsigned char *dst;
     char **files;
