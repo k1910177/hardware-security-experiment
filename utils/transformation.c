@@ -265,18 +265,3 @@ void KeyExpansion(unsigned char *w, unsigned char *init_key) {
         i += 4;
     }
 }
-
-static void swap(unsigned char *src, int i1, int i2){
-    unsigned char tmp = src[i1];
-    src[i1] = src[i2];
-    src[i2] = tmp;
-}
-
-void Transpose(unsigned char *src){
-    swap(src, 1, 4);
-    swap(src, 2, 8);
-    swap(src, 3, 12);
-    swap(src, 6, 9);
-    swap(src, 7, 13);
-    swap(src, 11, 14);
-}

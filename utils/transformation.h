@@ -9,6 +9,5 @@ void MixColumns(unsigned char *dst, unsigned char *src);
 void invMixColumns(unsigned char *dst, unsigned char *src);
 void AddRoundKey(unsigned char *dst, unsigned char *src, unsigned char *key);
 void KeyExpansion(unsigned char *w, unsigned char *init_key);
-void Transpose(unsigned char *src);
 
 #endif
