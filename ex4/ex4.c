@@ -3,33 +3,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "../utils/constants.h"
 #include "../utils/debug.h"
 #include "../utils/parser.h"
 #include "../utils/transformation.h"
-
-void Transform(unsigned char *state, unsigned char *rKey) {
-    AddRoundKey(state, state, rKey);
-    SubBytes(state, state);
-    ShiftRows(state, state);
-    MixColumns(state, state);
-}
-
-bool isOneByteDiff(unsigned char *x, unsigned char *y, int type) {
-    int diffCount = 0;
-    for (int i = 0; i < 4; i++) {
-        int index = 4 * type + i;
-        if (x[index] != y[index]) diffCount++;
-        if (diffCount > 1) return false;
-    }
-    return diffCount == 1 ? true : false;
-}
-
-void combinePartialKeys(unsigned char *dst, unsigned char keys[4][16]) {
-    for (int i = 0; i < 16; i++) {
-        dst[i] = keys[0][i] | keys[1][i] | keys[2][i] | keys[3][i];
-    }
-}
 
 typedef struct arg_struct {
     unsigned char *dst;
@@ -41,9 +17,27 @@ typedef struct arg_struct {
 } arg_struct;
 
 bool done;
-const int threadCount = 8;
+const int threadCount = 8; // Must be a divisor of 256
+
+void transform(unsigned char *state, unsigned char *rKey) {
+    AddRoundKey(state, state, rKey);
+    SubBytes(state, state);
+    ShiftRows(state, state);
+    MixColumns(state, state);
+}
+
+bool isOneByteOff(unsigned char *x, unsigned char *y, int type) {
+    int diffCount = 0;
+    for (int i = 0; i < 4; i++) {
+        int index = 4 * type + i;
+        if (x[index] != y[index]) diffCount++;
+        if (diffCount > 1) return false;
+    }
+    return diffCount == 1 ? true : false;
+}
 
 void *findPartialKey(void *threadArg) {
+    // Parse arguments
     arg_struct *arg = (arg_struct *)threadArg;
 
     unsigned char key[16];
@@ -58,6 +52,7 @@ void *findPartialKey(void *threadArg) {
     }
 
     for (int k0 = arg->from; k0 < arg->to; k0++) {
+        // Prints progress
         printf("%d / %d\n", k0 % (256 / threadCount), (256 / threadCount));
 
         switch (arg->type) {
@@ -93,19 +88,18 @@ void *findPartialKey(void *threadArg) {
                     case 3: key[11] = k3; break;
                     }
 
-                    int i;
-                    for (i = 0; i < arg->num; i++) {
-                        memcpy(state1, pt1[i], sizeof(state1));
-                        memcpy(state2, pt2[i], sizeof(state2));
+                    int fileIndex;
+                    for (fileIndex = 0; fileIndex < arg->num; fileIndex++) {
+                        memcpy(state1, pt1[fileIndex], sizeof(state1));
+                        memcpy(state2, pt2[fileIndex], sizeof(state2));
 
-                        Transform(state1, key);
-                        Transform(state2, key);
+                        transform(state1, key);
+                        transform(state2, key);
 
-                        if (!isOneByteDiff(state1, state2, arg->type)) {
-                            break;
-                        }
+                        if (!isOneByteOff(state1, state2, arg->type)) break;
                     }
-                    if (i == arg->num) {
+
+                    if (fileIndex == arg->num) {
                         done = true;
                         memcpy(arg->dst, key, sizeof(key));
                         printf("type%d done!\n", arg->type);
@@ -116,31 +110,40 @@ void *findPartialKey(void *threadArg) {
             }
         }
     }
+    return NULL;
+}
+
+void combinePartialKeys(unsigned char *dst, unsigned char pKeys[4][16]) {
+    for (int i = 0; i < 16; i++) {
+        dst[i] = pKeys[0][i] | pKeys[1][i] | pKeys[2][i] | pKeys[3][i];
+    }
 }
 
 int main() {
+    // Partial keys
     unsigned char pKeys[4][16];
+    // Final key
     unsigned char Key[16];
 
     /* clang-format off */
-    char *files[4][10] = {{"pt/8", "pt/9", "pt/12", "pt/15"},
-                          {"pt/10", "pt/14", "pt/20"},
-                          {"pt/1", "pt/2", "pt/3", "pt/11", "pt/13", "pt/17", "pt/18"},
-                          {"pt/4", "pt/5", "pt/6", "pt/7", "pt/16", "pt/19"}};
+    char *files[4][10] = {{"pt/8", "pt/9", "pt/12", "pt/15"},                            // type 0
+                          {"pt/10", "pt/14", "pt/20"},                                   // type 1
+                          {"pt/1", "pt/2", "pt/3", "pt/11", "pt/13", "pt/17", "pt/18"},  // type 2
+                          {"pt/4", "pt/5", "pt/6", "pt/7", "pt/16", "pt/19"}};           // type 3
     const int fileCounts[4] = {4, 3, 7, 6};
     /* clang-format on */
 
-    for (int t = 0; t < 4; t++) {
+    for (int type = 0; type < 4; type++) {
         pthread_t threads[threadCount];
         arg_struct threadParams[threadCount];
 
         for (int i = 0; i < threadCount; i++) {
-            threadParams[i].dst = pKeys[t];
-            threadParams[i].files = files[t];
-            threadParams[i].num = fileCounts[t];
+            threadParams[i].dst = pKeys[type];
+            threadParams[i].files = files[type];
+            threadParams[i].num = fileCounts[type];
             threadParams[i].from = i * 256 / threadCount;
             threadParams[i].to = i * 256 / threadCount + 256 / threadCount;
-            threadParams[i].type = t;
+            threadParams[i].type = type;
             pthread_create(&threads[i], NULL, findPartialKey,
                            (void *)&threadParams[i]);
         }
