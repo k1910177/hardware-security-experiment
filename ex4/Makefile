@@ -1,5 +1,5 @@
 CC = gcc
-SRC = ex4
+SRC = idea
 TARGET = $(SRC).o
 OBJS = ../utils/*.c $(SRC).c
 
