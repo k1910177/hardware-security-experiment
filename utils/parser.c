@@ -13,6 +13,15 @@ static void parse(unsigned char *dst, char *str) {
     }
 }
 
+void parseHexString(unsigned char *dst, char *str) {
+    for (unsigned int i = 0; i < strlen(str); i += 2) {
+        char b[3];
+        b[0] = *(str + i);
+        b[1] = *(str + i + 1);
+        *(dst + (i >> 1)) = strtoul(b, NULL, 16);
+    }
+}
+
 void readfile(const char *filename, unsigned char *pt1, unsigned char *pt2) {
     FILE *file = fopen(filename, "r");
     char line[64];
