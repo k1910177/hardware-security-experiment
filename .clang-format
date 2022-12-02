@@ -2,3 +2,4 @@ IndentWidth: 4
 AllowShortIfStatementsOnASingleLine: true
 AllowShortCaseLabelsOnASingleLine: true
 AllowShortBlocksOnASingleLine: true
+ColumnLimit: 100
