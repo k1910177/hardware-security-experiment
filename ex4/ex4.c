@@ -8,25 +8,29 @@
 #include "../shared/transformation.h"
 
 /**
- *  type0  |  type1  |  type2  |  type3 
+ * Plain text error pattern:
+ *  type0  |  type1  |  type2  |  type3
  * x 0 0 0 | 0 x 0 0 | 0 0 x 0 | 0 0 0 x
  * 0 x 0 0 | 0 0 x 0 | 0 0 0 x | x 0 0 0
  * 0 0 x 0 | 0 0 0 x | x 0 0 0 | 0 x 0 0
- * 0 0 0 x | x 0 0 0 | 0 x 0 0 | 0 0 x 0 
+ * 0 0 0 x | x 0 0 0 | 0 x 0 0 | 0 0 x 0
  */
 
 typedef struct arg_struct {
-    unsigned char *dst;
-    char **files;
-    int type;
-    int num;
-    int from;
-    int to;
+    unsigned char *dst; // Output destination
+    char **files;       // Files to read
+    int num;            // Number of files
+    int type;           // Pattern number
+    int from;           // Search starting point [0, 255)
+    int to;             // Search ending point (0, 255]
 } arg_struct;
 
 bool done;
 const int threadCount = 8; // Must be a divisor of 256
 
+/// @brief Do round operation until the first MixColumns operation
+/// @param state AES state
+/// @param rKey Round key
 void transform(unsigned char *state, unsigned char *rKey) {
     AddRoundKey(state, state, rKey);
     SubBytes(state, state);
@@ -34,9 +38,14 @@ void transform(unsigned char *state, unsigned char *rKey) {
     MixColumns(state, state);
 }
 
+/// @brief Return true if and only if `x` is one byte off from `y`
+/// @param x AES state x
+/// @param y AES state y
+/// @param type Pattern number
 bool isOneByteOff(unsigned char *x, unsigned char *y, int type) {
     int diffCount = 0;
     for (int i = 0; i < 4; i++) {
+        // We can skip parts of the array since we know the pattern
         int index = 4 * type + i;
         if (x[index] != y[index]) diffCount++;
         if (diffCount > 1) return false;
@@ -44,23 +53,26 @@ bool isOneByteOff(unsigned char *x, unsigned char *y, int type) {
     return diffCount == 1 ? true : false;
 }
 
+/// @brief Find partial key
+/// @param threadArg
 void *findPartialKey(void *threadArg) {
     // Parse arguments
     arg_struct *arg = (arg_struct *)threadArg;
 
-    unsigned char key[16];
-    unsigned char state1[16];
-    unsigned char state2[16];
-    unsigned char pt1[arg->num][16];
-    unsigned char pt2[arg->num][16];
+    unsigned char state1[16], state2[16];
+    unsigned char key[16], pt1[arg->num][16], pt2[arg->num][16];
 
+    // Initialize and fill with zeros
     memset(key, 0, sizeof(key));
+
+    // Read all files and store the parsed texts to pt1 and pt2
     for (int i = 0; i < arg->num; i++) {
         readfile(arg->files[i], pt1[i], pt2[i]);
     }
 
+    // Start the brute for attack by iterating through all possible key combinations
     for (int k0 = arg->from; k0 < arg->to; k0++) {
-        // Prints progress
+        // Print progress
         printf("%d / %d\n", k0 % (256 / threadCount), (256 / threadCount));
 
         switch (arg->type) {
@@ -87,6 +99,7 @@ void *findPartialKey(void *threadArg) {
                 }
 
                 for (int k3 = 0; k3 < 256; k3++) {
+                    // Kill this thread if one of the other threads finished the search
                     if (done) return NULL;
 
                     switch (arg->type) {
@@ -96,23 +109,26 @@ void *findPartialKey(void *threadArg) {
                     case 3: key[11] = k3; break;
                     }
 
-                    int fileIndex;
-                    for (fileIndex = 0; fileIndex < arg->num; fileIndex++) {
+                    for (int fileIndex = 0; fileIndex < arg->num; fileIndex++) {
+                        // Copy pt1 and pt2 to state1 and state2, respectively
                         memcpy(state1, pt1[fileIndex], sizeof(state1));
                         memcpy(state2, pt2[fileIndex], sizeof(state2));
 
                         transform(state1, key);
                         transform(state2, key);
 
-                        if (!isOneByteOff(state1, state2, arg->type)) break;
-                    }
-
-                    if (fileIndex == arg->num) {
-                        done = true;
-                        memcpy(arg->dst, key, sizeof(key));
-                        printf("type%d done!\n", arg->type);
-                        printAsAESState("key", arg->dst);
-                        return NULL;
+                        if (isOneByteOff(state1, state2, arg->type)) {
+                            // Return if and only if isOneByteOff == true for all pairs
+                            if (fileIndex == arg->num - 1) {
+                                done = true;
+                                memcpy(arg->dst, key, sizeof(key));
+                                printf("type%d done!\n", arg->type);
+                                printAsAESState("key", arg->dst);
+                                return NULL;
+                            } 
+                        } else {
+                            break;
+                        }
                     }
                 }
             }
@@ -121,6 +137,9 @@ void *findPartialKey(void *threadArg) {
     return NULL;
 }
 
+/// @brief Combine partial keys into one key
+/// @param dst Output key
+/// @param pKeys Partial keys
 void combinePartialKeys(unsigned char *dst, unsigned char pKeys[4][16]) {
     for (int i = 0; i < 16; i++) {
         dst[i] = pKeys[0][i] | pKeys[1][i] | pKeys[2][i] | pKeys[3][i];
@@ -142,9 +161,9 @@ int main() {
     /* clang-format on */
 
     for (int type = 0; type < 4; type++) {
+        // Create multiple threads for parallel searching
         pthread_t threads[threadCount];
         arg_struct threadParams[threadCount];
-
         for (int i = 0; i < threadCount; i++) {
             threadParams[i].dst = pKeys[type];
             threadParams[i].files = files[type];
@@ -152,17 +171,19 @@ int main() {
             threadParams[i].from = i * 256 / threadCount;
             threadParams[i].to = i * 256 / threadCount + 256 / threadCount;
             threadParams[i].type = type;
-            pthread_create(&threads[i], NULL, findPartialKey,
-                           (void *)&threadParams[i]);
+            pthread_create(&threads[i], NULL, findPartialKey, (void *)&threadParams[i]);
         }
 
-        done = false;
+        // Wait until one thread finishes the search
+        done = false; // Reset signal
         for (int i = 0; i < threadCount; i++) {
             pthread_join(threads[i], NULL);
         }
     }
 
+    // Combine partial keys
     combinePartialKeys(Key, pKeys);
+    // Print the combined key
     printAsHex("key", Key);
 
     return 0;
