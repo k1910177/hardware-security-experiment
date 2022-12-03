@@ -1,7 +1,7 @@
 CC = gcc
 SRC = ex2-1
 TARGET = $(SRC).o
-OBJS = ../utils/*.c $(SRC).c
+OBJS = ../shared/*.c $(SRC).c
 
 $(TARGET): $(OBJS)
 	$(CC) -o $(TARGET) $(OBJS)

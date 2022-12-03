@@ -3,9 +3,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "../utils/debug.h"
-#include "../utils/parser.h"
-#include "../utils/transformation.h"
+#include "../shared/debug.h"
+#include "../shared/parser.h"
+#include "../shared/transformation.h"
 
 /**
  *  type0  |  type1  |  type2  |  type3 

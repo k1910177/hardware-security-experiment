@@ -1,6 +1,6 @@
-#include "../utils/constants.h"
-#include "../utils/debug.h"
-#include "../utils/transformation.h"
+#include "../shared/constants.h"
+#include "../shared/debug.h"
+#include "../shared/transformation.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
