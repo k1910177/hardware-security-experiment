@@ -70,7 +70,7 @@ void *findPartialKey(void *threadArg) {
         readfile(arg->files[i], pt1[i], pt2[i]);
     }
 
-    // Start the brute for attack by iterating through all possible key combinations
+    // Start the brute-force attack by iterating through all possible key combinations
     for (int k0 = arg->from; k0 < arg->to; k0++) {
         // Print progress
         printf("%d / %d\n", k0 % (256 / threadCount), (256 / threadCount));
