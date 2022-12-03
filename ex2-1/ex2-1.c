@@ -1,27 +1,37 @@
 #include "../utils/constants.h"
 #include "../utils/debug.h"
-#include "../utils/transformation.h"
 #include "../utils/parser.h"
+#include "../utils/transformation.h"
 #include <stdio.h>
 #include <string.h>
 
 #define NUM 10
 
-void Encrypt(unsigned char *dst, unsigned char *src, unsigned char *init_key) {
+/// @brief Encrypt `src` with `init_key` using AES-128 algorithm
+/// @param dst Cipher
+/// @param src Plain text
+/// @param init_key Private key
+void encrypt(unsigned char *dst, unsigned char *src, unsigned char *init_key) {
     unsigned char state[Nk * Nb];
     unsigned char key[Nk * Nb];
     unsigned char w[Nk * Nb * (Nr + 1)];
 
+    // Copy init_key to key
     memcpy(key, init_key, sizeof(key));
+    // Copy src to state
     memcpy(state, src, sizeof(state));
-    KeyExpansion(w, key);
 
+    // Generate round key for all rounds
+    KeyExpansion(w, key);
+    // Add the first round key
     AddRoundKey(state, state, w);
 
     for (int i = 1; i < Nr; i++) {
         SubBytes(state, state);
         ShiftRows(state, state);
         MixColumns(state, state);
+
+        // Add the ith round key
         AddRoundKey(state, state, w + i * Nb * Nk);
     }
 
@@ -29,6 +39,7 @@ void Encrypt(unsigned char *dst, unsigned char *src, unsigned char *init_key) {
     ShiftRows(state, state);
     AddRoundKey(state, state, w + Nr * Nb * Nk);
 
+    // Copy the result to dst
     memcpy(dst, state, sizeof(state));
 }
 
@@ -75,12 +86,15 @@ int main() {
     for (int i = 0; i < NUM; i++) {
         unsigned char plain_text[16], key[16], cipher_text[16], expected_cipher_text[16];
 
+        // Parse hex string to byte array
         parseHexString(expected_cipher_text, expected_raw_cipher_texts[i]);
         parseHexString(plain_text, raw_plain_texts[i]);
         parseHexString(key, raw_keys[i]);
 
-        Encrypt(cipher_text, plain_text, key);
+        // Encrypt plain_text with key
+        encrypt(cipher_text, plain_text, key);
 
+        // Print
         printf("======== TEST %d ========\n", i);
         printAsHex("plain_text          ", plain_text);
         printAsHex("key                 ", key);
