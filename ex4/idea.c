@@ -1,6 +1,6 @@
-#include "../utils/constants.h"
-#include "../utils/debug.h"
-#include "../utils/transformation.h"
+#include "../shared/constants.h"
+#include "../shared/debug.h"
+#include "../shared/transformation.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
@@ -54,10 +54,10 @@ int main() {
                                  0x0c, 0x0d, 0x0e, 0x0f};
 
     // Test key in AES state format
-    unsigned char TestKey[16] = {0x00, 0x01, 0x02, 0x00, 
-                                 0x00, 0x00, 0x06, 0x07,
-                                 0x08, 0x00, 0x00, 0x0b, 
-                                 0x0c, 0x0d, 0x00, 0x00};
+    unsigned char TestKey[16] = {0x00, 0x00, 0x00, 0x00, 
+                                 0x00, 0x05, 0x00, 0x00,
+                                 0x00, 0x00, 0x0a, 0x00, 
+                                 0x00, 0x00, 0x00, 0x0f};
     /* clang-format on */
 
     // AES state => array format
